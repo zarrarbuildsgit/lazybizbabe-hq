@@ -9,14 +9,5 @@
       "path": "/api/auth/threads/refresh",
       "schedule": "0 0 1 * *"
     }
-  ],
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
-    "OPENROUTER_API_KEY": "@openrouter-api-key",
-    "THREADS_APP_ID": "@threads-app-id",
-    "THREADS_APP_SECRET": "@threads-app-secret",
-    "NEXT_PUBLIC_APP_URL": "@app-url"
-  }
+  ]
 }
