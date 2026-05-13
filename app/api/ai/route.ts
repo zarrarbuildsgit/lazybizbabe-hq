@@ -9,6 +9,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing type or prompt' }, { status: 400 })
     }
 
+    // Debug — log key exists
+    console.log('[AI] Key exists:', !!process.env.OPENROUTER_API_KEY)
+    console.log('[AI] Key prefix:', process.env.OPENROUTER_API_KEY?.substring(0, 12))
+    console.log('[AI] Type:', type)
+
     let systemPrompt: string
     let maxTokens = 600
 
@@ -44,8 +49,8 @@ export async function POST(req: NextRequest) {
     const content = await callOpenRouter(messages, 'llama', maxTokens)
     return NextResponse.json({ content })
 
-  } catch (err) {
-    console.error('[AI route error]', err)
-    return NextResponse.json({ error: 'AI request failed' }, { status: 500 })
+  } catch (err: any) {
+    console.error('[AI route error]', err?.message ?? err)
+    return NextResponse.json({ error: err?.message ?? 'AI request failed' }, { status: 500 })
   }
 }
