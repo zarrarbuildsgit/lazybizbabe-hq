@@ -31,19 +31,19 @@ export function ContentClient() {
   const [aiIdeas, setAiIdeas]           = useState<{ text: string; type: string }[]>([])
   const [loadingIdeas, setLoadingIdeas] = useState(false)
   const [improving, setImproving]       = useState(false)
-  const [savedDrafts, setSavedDrafts]   = useState<string[]>([])
   const [ideas, setIdeas]               = useState(IDEA_BANK)
 
-  const charCount  = postText.length
-  const hookScore  = charCount === 0 ? 'Write something...'
-    : charCount < 50  ? 'Keep going...'
-    : charCount < 150 ? 'Looking good ✦'
-    : charCount < 300 ? 'Strong hook territory 🔥'
-    : charCount < 500 ? 'Solid post length ✓'
+  const charCount = postText.length
+  const hookScore = charCount === 0       ? 'Write something...'
+    : charCount < 50   ? 'Keep going...'
+    : charCount < 150  ? 'Looking good ✦'
+    : charCount < 300  ? 'Strong hook territory 🔥'
+    : charCount < 500  ? 'Solid post length ✓'
     : '⚠ Getting long for Threads'
 
   async function generateIdeas() {
     setLoadingIdeas(true)
+    setAiIdeas([])
     try {
       const res = await fetch('/api/ai', {
         method: 'POST',
@@ -54,13 +54,13 @@ export function ContentClient() {
           context: 'Nigerian creator, ADHD, digital products (Soft Chaos guide $37), 429 followers, authentic voice, no hashtags',
         }),
       })
-      const { content } = await res.json()
-      // Parse JSON from AI response
-      const cleaned = content.replace(/```json\n?|\n?```/g, '').trim()
+      const data = await res.json()
+      if (!data.content) throw new Error('No content')
+      const cleaned = data.content.replace(/```json\n?|\n?```/g, '').trim()
       const parsed  = JSON.parse(cleaned)
       setAiIdeas(Array.isArray(parsed) ? parsed : [])
     } catch {
-      setAiIdeas([{ text: 'Could not generate ideas right now. Try again.', type: '⚠ Error' }])
+      setAiIdeas([{ text: 'Could not generate ideas right now. Check your OpenRouter API key in Vercel env vars.', type: '⚠ Error' }])
     }
     setLoadingIdeas(false)
   }
@@ -72,13 +72,10 @@ export function ContentClient() {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'post-improve',
-          prompt: postText,
-        }),
+        body: JSON.stringify({ type: 'post-improve', prompt: postText }),
       })
-      const { content } = await res.json()
-      setPostText(content)
+      const data = await res.json()
+      if (data.content) setPostText(data.content)
     } catch {}
     setImproving(false)
   }
@@ -86,7 +83,6 @@ export function ContentClient() {
   async function saveDraft() {
     if (!postText.trim()) return
     await supabase.from('post_drafts').insert({ content: postText, tag })
-    setSavedDrafts(prev => [postText.substring(0, 60) + '...', ...prev])
     alert('Draft saved 🤍')
   }
 
@@ -94,7 +90,7 @@ export function ContentClient() {
     if (!postText.trim()) return
     try {
       await navigator.clipboard.writeText(postText)
-      alert('Copied to clipboard! Paste into Threads.')
+      alert('Copied! Paste into Threads.')
     } catch {}
   }
 
@@ -116,10 +112,7 @@ export function ContentClient() {
       </div>
 
       {/* Composer */}
-      <div
-        className="rounded-2xl p-6 mb-5"
-        style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
-      >
+      <div className="rounded-2xl p-6 mb-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <div className="card-label">Write a post</div>
         <textarea
           className="w-full bg-transparent border-none outline-none resize-none"
@@ -129,8 +122,6 @@ export function ContentClient() {
           onChange={e => setPostText(e.target.value)}
           maxLength={500}
         />
-
-        {/* Tags */}
         <div className="flex gap-1.5 flex-wrap mt-2">
           {POST_TAGS.map(t => (
             <button
@@ -149,8 +140,6 @@ export function ContentClient() {
             </button>
           ))}
         </div>
-
-        {/* Footer */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t flex-wrap gap-2" style={{ borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-3">
             <span style={{ fontSize: 11, color: 'var(--mauve)', opacity: 0.7 }}>{charCount} / 500</span>
@@ -170,16 +159,12 @@ export function ContentClient() {
 
       {/* AI Ideas */}
       <Card label="AI-generated post ideas" className="mb-5">
-        <button
-          className="btn-primary mb-4"
-          onClick={generateIdeas}
-          disabled={loadingIdeas}
-        >
+        <button className="btn-primary mb-4" onClick={generateIdeas} disabled={loadingIdeas}>
           {loadingIdeas ? '✦ Generating...' : '✦ Generate 5 ideas for me'}
         </button>
-        {aiIdeas.length > 0 && (
+        {(aiIdeas ?? []).length > 0 && (
           <div className="flex flex-col gap-2">
-            {aiIdeas.map((idea, i) => (
+            {(aiIdeas ?? []).map((idea, i) => (
               <div
                 key={i}
                 className="p-3 rounded-xl cursor-pointer transition-all duration-200"

@@ -2,38 +2,43 @@
 
 import { useState, useEffect } from 'react'
 import { Card, StatCard } from '@/components/ui/Card'
-import { formatCurrency, daysUntil, progressPct, getGreeting } from '@/lib/utils'
+import { formatCurrency, daysUntil, getGreeting, randomQuote, randomPrompt } from '@/lib/utils'
 
 interface Props {
   totalRevenue: number
   salesCount: number
   currentFollowers: number
   initialOneThing: string
-  quote: string
-  prompt: string
 }
 
 const MOODS = [
   { emoji: '😤', label: 'Struggling', msg: "That's okay. Survival mode is still mode. One tiny task. Just one." },
-  { emoji: '😐', label: 'Neutral',   msg: "Neutral is underrated. You're here. That's enough." },
-  { emoji: '🙂', label: 'Okay',      msg: "Okay is the launchpad for good. Keep going." },
-  { emoji: '😊', label: 'Good',      msg: "Good energy — use it. Do the thing you've been putting off." },
-  { emoji: '🔥', label: 'Power',     msg: "POWER MODE. This is the time. Go." },
+  { emoji: '😐', label: 'Neutral',    msg: "Neutral is underrated. You're here. That's enough." },
+  { emoji: '🙂', label: 'Okay',       msg: "Okay is the launchpad for good. Keep going." },
+  { emoji: '😊', label: 'Good',       msg: "Good energy — use it. Do the thing you've been putting off." },
+  { emoji: '🔥', label: 'Power',      msg: "POWER MODE. This is the time. Go." },
 ]
 
-export function DashboardClient({ totalRevenue, salesCount, currentFollowers, initialOneThing, quote, prompt }: Props) {
-  const [oneThing, setOneThing]     = useState(initialOneThing)
-  const [mood, setMood]             = useState<string | null>(null)
-  const [moodMsg, setMoodMsg]       = useState('')
-  const [countdown, setCountdown]   = useState({ d: 0, h: 0, m: 0, s: 0 })
-  const [streakCount, setStreak]    = useState(0)
-  const [currentPrompt, setPrompt]  = useState(prompt)
-  const [savingThing, setSavingThing] = useState(false)
-  const [dailyInsight, setInsight]  = useState<string | null>(null)
+export function DashboardClient({ totalRevenue, salesCount, currentFollowers, initialOneThing }: Props) {
+  const [oneThing, setOneThing]         = useState(initialOneThing)
+  const [mood, setMood]                 = useState<string | null>(null)
+  const [moodMsg, setMoodMsg]           = useState('')
+  const [countdown, setCountdown]       = useState({ d: 0, h: 0, m: 0, s: 0 })
+  const [streakCount, setStreak]        = useState(0)
+  const [currentPrompt, setPrompt]      = useState('')
+  const [quote, setQuote]               = useState('')
+  const [savingThing, setSavingThing]   = useState(false)
+  const [dailyInsight, setInsight]      = useState<string | null>(null)
   const [loadingInsight, setLoadingInsight] = useState(false)
 
   const LAUNCH_DATE = '2026-05-15'
   const launchDays  = daysUntil(LAUNCH_DATE)
+
+  // Set random values client-side only — avoids hydration mismatch
+  useEffect(() => {
+    setQuote(randomQuote())
+    setPrompt(randomPrompt())
+  }, [])
 
   // Load streak from localStorage
   useEffect(() => {
@@ -59,7 +64,6 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
     return () => clearInterval(id)
   }, [])
 
-  // Get AI daily insight
   async function getInsight() {
     setLoadingInsight(true)
     try {
@@ -72,9 +76,11 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
           context: `Revenue: $${totalRevenue.toFixed(2)}, Sales: ${salesCount}, Followers: ${currentFollowers}, Streak: ${streakCount} days, Mood: ${mood ?? 'not set yet'}`,
         }),
       })
-      const { content } = await res.json()
-      setInsight(content)
-    } catch {}
+      const data = await res.json()
+      setInsight(data.content ?? 'Could not generate insight right now.')
+    } catch {
+      setInsight('Could not reach AI right now. Check your OpenRouter key in Vercel.')
+    }
     setLoadingInsight(false)
   }
 
@@ -107,7 +113,7 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
   }
 
   function newPrompt() {
-    import('@/lib/utils').then(({ randomPrompt }) => setPrompt(randomPrompt()))
+    setPrompt(randomPrompt())
   }
 
   return (
@@ -127,7 +133,6 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
 
       {/* Row 1: One Thing + Countdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-        {/* One Thing */}
         <div
           className="rounded-2xl p-6 relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, var(--terracotta) 0%, #B87A5A 100%)', color: 'white' }}
@@ -145,7 +150,6 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
           />
         </div>
 
-        {/* Countdown */}
         <Card label={`Launch countdown — May 15`}>
           <div className="flex gap-3">
             {[['d', countdown.d], ['h', countdown.h], ['m', countdown.m], ['s', countdown.s]].map(([lbl, val]) => (
@@ -197,14 +201,13 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
           )}
         </Card>
 
-        {/* Quote */}
         <div
           className="rounded-2xl p-6"
           style={{ background: 'linear-gradient(135deg, rgba(155,133,156,0.1) 0%, rgba(196,176,200,0.12) 100%)', border: '1px solid rgba(196,176,200,0.3)' }}
         >
           <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 60, color: 'var(--lavender)', opacity: 0.4, lineHeight: 0.5, display: 'block', marginBottom: 12 }}>"</span>
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontStyle: 'italic', lineHeight: 1.6, color: 'var(--slate)' }}>
-            {quote}
+            {quote || '...'}
           </p>
           <p style={{ fontSize: 11, color: 'var(--mauve)', marginTop: 12, opacity: 0.7 }}>— from your own Soft Chaos guide</p>
         </div>
@@ -214,7 +217,7 @@ export function DashboardClient({ totalRevenue, salesCount, currentFollowers, in
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
         <Card label="Today's post prompt">
           <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 12 }}>
-            {currentPrompt}
+            {currentPrompt || '...'}
           </p>
           <button className="btn-ghost" onClick={newPrompt}>Shuffle prompt →</button>
         </Card>
