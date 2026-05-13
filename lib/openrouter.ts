@@ -15,9 +15,15 @@ export interface OpenRouterMessage {
 
 export async function callOpenRouter(
   messages: OpenRouterMessage[],
-  model: FreeModel = 'google',
+  model: FreeModel = 'deepseek',
   maxTokens = 800
 ): Promise<string> {
+
+  // Model priority: env var override → passed model → deepseek fallback
+  const modelToUse = process.env.OPENROUTER_MODEL
+    ?? FREE_MODELS[model]
+    ?? FREE_MODELS.deepseek
+
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -27,12 +33,14 @@ export async function callOpenRouter(
       'X-Title': 'LazyBizBabe HQ',
     },
     body: JSON.stringify({
-      model: FREE_MODELS[model],
+      model: modelToUse,
       messages,
       max_tokens: maxTokens,
       temperature: 0.8,
     }),
   })
+
+  console.log('[OpenRouter] Using model:', modelToUse)
 
   if (!res.ok) {
     const err = await res.text()
