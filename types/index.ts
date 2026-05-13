@@ -97,6 +97,10 @@ export interface ThreadsPost {
 export interface ThreadsInsights {
   followers_count: number
   posts: ThreadsPost[]
+  mock?: boolean
+  connect_url?: string
+  token_expired?: boolean
+  token_expires_in_days?: number
 }
 
 // ── AI TYPES ──

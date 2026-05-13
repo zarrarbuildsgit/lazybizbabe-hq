@@ -56,7 +56,7 @@ export async function GET() {
       followers_count: profile.followers_count ?? 0,
       posts: postsData.data ?? [],
       token_expires_in_days: daysLeft ?? undefined,
-    } as ThreadsInsights & { token_expires_in_days?: number })
+    })
 
   } catch (err) {
     console.error('[Threads API] Error:', err)
