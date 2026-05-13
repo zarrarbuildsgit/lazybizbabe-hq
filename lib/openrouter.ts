@@ -1,7 +1,8 @@
 export const FREE_MODELS = {
-  llama: 'meta-llama/llama-3.3-70b-instruct:free',
-  mistral: 'mistralai/mistral-7b-instruct:free',
-  gemma: 'google/gemma-2-9b-it:free',
+  llama:    'meta-llama/llama-3.3-70b-instruct:free',
+  mistral:  'mistralai/mistral-7b-instruct:free',
+  gemma:    'google/gemma-3-27b-it:free',
+  deepseek: 'deepseek/deepseek-chat-v3-0324:free',
 } as const
 
 export type FreeModel = keyof typeof FREE_MODELS
@@ -13,7 +14,7 @@ export interface OpenRouterMessage {
 
 export async function callOpenRouter(
   messages: OpenRouterMessage[],
-  model: FreeModel = 'llama',
+  model: FreeModel = 'deepseek',
   maxTokens = 800
 ): Promise<string> {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
